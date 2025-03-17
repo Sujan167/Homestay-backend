@@ -34,6 +34,7 @@ model User {
   password           String
   role               Role               @default(GUEST)
   verificationStatus VerificationStatus @default(PENDING)
+  profilePicture     String?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   Booking            Booking[]
