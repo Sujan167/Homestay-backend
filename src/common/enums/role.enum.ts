@@ -1,0 +1,6 @@
+export enum Role {
+  GUEST = 'GUEST',
+  OWNER = 'OWNER',
+  COMMUNITY_OWNER = 'COMMUNITY_OWNER',
+  SUPERUSER = 'SUPERUSER',
+}

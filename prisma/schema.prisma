@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // connection_limit = 50
+}
+
+// ================= Models ==================
+// prisma/schema.prisma
+
+// Enum for user roles
+enum Role {
+  GUEST
+  OWNER
+  COMMUNITY_OWNER
+  SUPERUSER
+}
+
+// Enum for verification status
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// User model
+model User {
+  id                 Int                @id @default(autoincrement())
+  name               String
+  email              String             @unique
+  password           String
+  role               Role               @default(GUEST)
+  verificationStatus VerificationStatus @default(PENDING)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  Booking            Booking[]
+  Homestay           Homestay?
+  CommunityHomestay  CommunityHomestay?
+
+  @@index([email, role])
+}
+
+// Room Model
+model Room {
+  id          Int      @id @default(autoincrement())
+  homestay    Homestay @relation(fields: [homestayId], references: [id])
+  homestayId  Int
+  name        String
+  description String
+  price       Float
+  adults      Int      @default(1)
+  children    Int?     @default(0)
+  totalPeople Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([homestayId, price])
+}
+
+model Facility {
+  id        Int                @id @default(autoincrement())
+  name      String             @unique // Example: "WiFi", "Parking", "Swimming Pool"
+  homestays HomestayFacility[]
+}
+
+model HomestayFacility {
+  id         Int      @id @default(autoincrement())
+  homestayId Int
+  homestay   Homestay @relation(fields: [homestayId], references: [id])
+  facilityId Int
+  facility   Facility @relation(fields: [facilityId], references: [id])
+}
+
+// Homestay model
+model Homestay {
+  id                  Int                @id @default(autoincrement())
+  name                String
+  description         String
+  location            String
+  ownerId             Int                @unique
+  capacity            Int
+  checkIn             DateTime
+  checkOut            DateTime
+  images              Json
+  status              VerificationStatus @default(PENDING)
+  communityHomestayId Int?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  bookings          Booking[]
+  HomestayFacility  HomestayFacility[]
+  owner             User               @relation(fields: [ownerId], references: [id])
+  communityHomestay CommunityHomestay? @relation(fields: [communityHomestayId], references: [id])
+  Room              Room[]
+
+  @@index([location, ownerId])
+}
+
+// CommunityHomestay model
+model CommunityHomestay {
+  id               Int        @id @default(autoincrement())
+  name             String
+  description      String
+  communityOwner   User       @relation(fields: [communityOwnerId], references: [id])
+  communityOwnerId Int        @unique
+  homestays        Homestay[]
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  @@index([communityOwnerId])
+}
+
+// Booking model
+model Booking {
+  id          Int                @id @default(autoincrement())
+  homestay    Homestay           @relation(fields: [homestayId], references: [id])
+  homestayId  Int
+  guest       User               @relation(fields: [guestId], references: [id])
+  guestId     Int
+  checkIn     DateTime
+  checkOut    DateTime
+  adults      Int                @default(1)
+  children    Int?               @default(0)
+  totalPeople Int                @default(1)
+  status      VerificationStatus @default(PENDING)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  Transaction Transaction[]
+
+  @@index([homestayId, guestId])
+}
+
+// Payment Platform Table
+model PaymentPlatform {
+  id           Int           @id @default(autoincrement())
+  name         String        @unique // Example: "Stripe", "PayPal", "Khalti", "eSewa"
+  transactions Transaction[]
+
+  @@index([name])
+}
+
+// Transaction Table
+model Transaction {
+  id                Int               @id @default(autoincrement())
+  booking           Booking           @relation(fields: [bookingId], references: [id])
+  bookingId         Int
+  paymentPlatform   PaymentPlatform   @relation(fields: [paymentPlatformId], references: [id])
+  paymentPlatformId Int
+  amount            Float
+  currency          String // Example: "USD", "NPR"
+  status            TransactionStatus @default(PENDING)
+  transactionId     String            @unique // External Transaction ID from Stripe, PayPal, etc.
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([bookingId, paymentPlatformId, status])
+}
+
+// Enum for Transaction Status
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
