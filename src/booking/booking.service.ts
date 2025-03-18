@@ -1,67 +1,29 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 
 @Injectable()
 export class BookingService {
-  create(createBookingDto: CreateBookingDto) {
-    return 'This action adds a new booking';
+  constructor(private readonly prisma: PrismaService) {}
+
+  async createBooking(data: CreateBookingDto) {
+    return this.prisma.booking.create({ data });
   }
 
-  findAll() {
-    return `This action returns all booking`;
+  async findAll() {
+    return this.prisma.booking.findMany();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} booking`;
+  async findOne(id: number) {
+    return this.prisma.booking.findUnique({ where: { id } });
   }
 
-  update(id: number, updateBookingDto: UpdateBookingDto) {
-    return `This action updates a #${id} booking`;
+  async update(id: number, data: UpdateBookingDto) {
+    return this.prisma.booking.update({ where: { id }, data });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} booking`;
+  async remove(id: number) {
+    return this.prisma.booking.delete({ where: { id } });
   }
 }
-// import { Injectable } from '@nestjs/common';
-// import { PrismaService } from 'src/prisma/prisma.service';
-
-// @Injectable()
-// export class BookingService {
-//   constructor(private prisma: PrismaService) {}
-
-//   // Guest requests booking for a homestay
-//   async requestBooking(guestId: number, homestayId: number) {
-//     const guest = await this.prisma.user.findUnique({
-//       where: { id: guestId },
-//     });
-
-//     if (!guest || guest.role !== 'GUEST') {
-//       throw new Error('User must be a guest to request booking');
-//     }
-
-//     const bookingRequest = await this.prisma.bookingRequest.create({
-//       data: {
-//         guestId: guestId,
-//         homestayId: homestayId,
-//         status: BookingRequestStatus.PENDING,
-//       },
-//     });
-
-//     return bookingRequest;
-//   }
-
-//   // Owner or community owner approves/rejects booking request
-//   async updateBookingRequestStatus(
-//     bookingRequestId: number,
-//     status: BookingRequestStatus,
-//   ) {
-//     const bookingRequest = await this.prisma.bookingRequest.update({
-//       where: { id: bookingRequestId },
-//       data: { status: status },
-//     });
-
-//     return bookingRequest;
-//   }
-// }

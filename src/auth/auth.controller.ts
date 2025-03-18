@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { log } from 'console';
+import { Role } from '@prisma/client';
 
 @Controller('auth')
 export class AuthController {
@@ -22,9 +23,14 @@ export class AuthController {
 
   @Post('register')
   async register(
-    @Body() body: { email: string; password: string; name: string },
+    @Body() body: { email: string; password: string; name: string; role: Role },
   ) {
     log(`Register attempt for ${body.email}`);
-    return this.authService.register(body.email, body.password, body.name);
+    return this.authService.register(
+      body.email,
+      body.password,
+      body.name,
+      body.role,
+    );
   }
 }

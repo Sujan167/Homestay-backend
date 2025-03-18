@@ -1,15 +1,27 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+// Booking Controller
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Patch,
+  Delete,
+} from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
-@Controller('booking')
+@Controller('bookings')
+@ApiTags('Booking')
+@ApiBearerAuth('jwt')
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
   @Post()
   create(@Body() createBookingDto: CreateBookingDto) {
-    return this.bookingService.create(createBookingDto);
+    return this.bookingService.createBooking(createBookingDto);
   }
 
   @Get()
