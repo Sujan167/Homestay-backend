@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Role } from 'src/common/enums/roles.enum';
 export class CreateHomestayDto {
   @ApiProperty()
   name: string;
@@ -9,7 +10,11 @@ export class CreateHomestayDto {
   @ApiProperty()
   ownerId: number;
   @ApiProperty()
-  capacity: number;
+  totalCapacity: number;
+  @ApiProperty()
+  ownerType: Role;
+  @ApiProperty()
+  totalBooked?: number;
   @ApiProperty()
   checkIn: Date;
   @ApiProperty()

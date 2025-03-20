@@ -5,11 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import {
-  CreateHomestayDto,
-  CreateRoomDto,
-  CreateFacilityDto,
-} from './dto/create-homestay.dto';
+import { CreateHomestayDto, CreateRoomDto } from './dto/create-homestay.dto';
 import { UpdateHomestayDto } from './dto/update-homestay.dto';
 import { Role } from 'src/common/enums/roles.enum';
 
@@ -20,7 +16,7 @@ export class HomestayService {
 
   async create(
     userId: number,
-    role: string,
+    role: Role,
     createHomestayDto: CreateHomestayDto,
   ) {
     if (role.toUpperCase() === 'OWNER') {
@@ -41,6 +37,7 @@ export class HomestayService {
       data: {
         ...homestayData,
         ownerId: userId,
+        ownerType: role,
       },
     });
 
@@ -91,11 +88,11 @@ export class HomestayService {
     return homestay;
   }
 
-  findAll(email: string, role: Role) {
+  async findMyAllHomestay(email: string, role: Role) {
     if (role == Role.SUPERUSER) {
-      return this.prisma.homestay.findMany();
+      return await this.prisma.homestay.findMany();
     } else {
-      return this.prisma.homestay.findMany({
+      return await this.prisma.homestay.findMany({
         where: {
           owner: {
             email,
@@ -103,6 +100,10 @@ export class HomestayService {
         },
       });
     }
+  }
+
+  async listAllHomestays() {
+    return await this.prisma.homestay.findMany();
   }
 
   async findOne(id: number) {
@@ -117,7 +118,6 @@ export class HomestayService {
     return homestay;
   }
 
-
   async update(id: number, updateHomestayDto: UpdateHomestayDto) {
     const homestay = await this.prisma.homestay.findUnique({
       where: { id },
@@ -127,7 +127,7 @@ export class HomestayService {
       throw new NotFoundException(`Homestay with ID ${id} not found`);
     }
 
-    return this.prisma.homestay.update({
+    return await this.prisma.homestay.update({
       where: { id },
       data: updateHomestayDto,
     });
@@ -142,8 +142,26 @@ export class HomestayService {
       throw new NotFoundException(`Homestay with ID ${id} not found`);
     }
 
-    return this.prisma.homestay.delete({
+    // Delete related bookings before deleting the homestay
+    await this.prisma.booking.deleteMany({
+      where: {
+        homestayId: homestay.id,
+      },
+    });
+
+    return await this.prisma.homestay.delete({
       where: { id },
+    });
+  }
+
+  async searchByLocation(location: string) {
+    return await this.prisma.homestay.findMany({
+      where: {
+        location: {
+          contains: location,
+          mode: 'insensitive',
+        },
+      },
     });
   }
 }

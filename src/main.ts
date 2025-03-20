@@ -5,6 +5,7 @@ import { SwaggerModule } from '@nestjs/swagger';
 import { DocumentBuilder } from '@nestjs/swagger/dist/document-builder';
 import { ConfigService } from '@nestjs/config';
 import * as bodyParser from 'body-parser';
+import * as fs from 'fs';
 
 async function bootstrap() {
   const logger = new Logger();
@@ -27,7 +28,7 @@ async function bootstrap() {
       .setDescription('API docs')
       .setVersion('1.0')
       //.addServer(`http://localhost:${port}/private`, 'Private Calls')
-      .addServer(`http://localhost:${port}/`)
+      .addServer(`http://localhost:${port}/api/v1`)
       .addBearerAuth(
         {
           type: 'http',
@@ -41,11 +42,18 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, config, {
       ignoreGlobalPrefix: true,
     });
+
+    // Save the Swagger JSON to a file
+    // fs.writeFileSync('swagger-spec.json', JSON.stringify(document, null, 2));
+
     SwaggerModule.setup('docs', app, document);
     console.log(
       'Swagger setup complete. Access it at http://localhost:' + port + '/docs',
     );
   }
+  // Set the global API prefix
+  app.setGlobalPrefix('api/v1');
+
   await app.listen(port);
   logger.log(`Application is running on: ${await app.getUrl()}`);
 }

@@ -17,13 +17,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { userId: number }) {
+  async validate(payload: any) {
     const user = await this.prisma.user.findUnique({
-      where: { id: payload.userId },
+      where: { id: payload.userId || payload.id || payload.sub }, // Flexible lookup
     });
+
     if (!user) {
       throw new UnauthorizedException('Invalid token');
     }
-    return user;
+    return { id: user.id, email: user.email, role: user.role };
   }
 }
