@@ -42,19 +42,18 @@ model User {
   updatedAt DateTime   @updatedAt
   Booking   Booking[]
   Homestay  Homestay[]
-  OTP       OTP[]
+  OTP       Otp[]
 
   @@index([id, email, role])
 }
 
-model OTP {
-  id             Int      @id @default(autoincrement())
-  userId         Int
-  otpCode        String // The OTP itself
-  expirationTime DateTime
-  createdAt      DateTime @default(now())
-  used           Boolean  @default(false) // Whether the OTP has been used or not
-  user           User     @relation(fields: [userId], references: [id])
+model Otp {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  otpCode   String // The OTP itself
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 
   @@index([userId, otpCode])
 }

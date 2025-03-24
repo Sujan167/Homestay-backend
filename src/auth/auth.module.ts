@@ -6,12 +6,14 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { EmailModule } from 'src/email/email.module';
+import { EmailService } from 'src/email/email.service';
 
 @Module({
   imports: [
     ConfigModule,
     JwtModule.registerAsync({
-      imports: [ConfigModule],
+      imports: [ConfigModule, EmailModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
@@ -19,7 +21,13 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
       }),
     }),
   ],
-  providers: [AuthService, PrismaService, JwtStrategy, JwtAuthGuard],
+  providers: [
+    AuthService,
+    PrismaService,
+    JwtStrategy,
+    JwtAuthGuard,
+    EmailService,
+  ],
   controllers: [AuthController],
   exports: [AuthService, JwtModule, JwtAuthGuard], // Export JwtModule and JwtAuthGuard
 })

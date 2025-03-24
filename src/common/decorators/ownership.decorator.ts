@@ -1,6 +1,6 @@
 import { SetMetadata } from '@nestjs/common';
 
-export const CHECK_OWNERSHIP = 'checkOwnership';
-
-export const CheckOwnership = (resource: string, field: string) =>
-  SetMetadata(CHECK_OWNERSHIP, { resource, field });
+export const CheckOwnership = (options: {
+  entity: string;
+  userField: string;
+}) => SetMetadata('entity', options.entity);

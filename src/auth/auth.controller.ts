@@ -7,6 +7,7 @@ import {
   UseGuards,
   UnauthorizedException,
   Logger,
+  Param,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -118,5 +119,20 @@ export class AuthController {
     res.clearCookie('refreshToken', { path: '/' });
 
     return { message: 'Logged out successfully' };
+  }
+
+  // ✅ Step 1: Request password reset
+  @Post('forgot-password')
+  async requestPasswordReset(@Body('email') email: string) {
+    return await this.authService.requestPasswordReset(email);
+  }
+
+  // ✅ Step 2: Reset password
+  @Post('reset-password')
+  async resetPassword(
+    @Param('token') token: string,
+    @Body('newPassword') newPassword: string,
+  ) {
+    return await this.authService.resetPassword(token, newPassword);
   }
 }

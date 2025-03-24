@@ -7,6 +7,7 @@ import { PrismaService } from './prisma/prisma.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { BookingModule } from './booking/booking.module';
 import { HomestayModule } from './homestay/homestay.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { HomestayModule } from './homestay/homestay.module';
     PrismaModule,
     BookingModule,
     HomestayModule,
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

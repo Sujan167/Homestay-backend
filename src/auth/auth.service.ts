@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
@@ -6,12 +11,14 @@ import { Role } from '@prisma/client';
 import { JwtPayload } from './dto/jwt-payload.interface';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { randomBytes } from 'crypto';
+import { EmailService } from 'src/email/email.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private readonly emailService: EmailService,
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -103,5 +110,75 @@ export class AuthService {
       where: { email },
       data: { refreshToken: null },
     });
+  }
+
+  // ✅ Step 1: Request password reset (Generate token & send email)
+  async requestPasswordReset(email: string) {
+    // Find the user
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Generate a secure token
+    const token = randomBytes(16).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1); // Token expires in 1 hour
+
+    // Store the token in the database
+    await this.prisma.otp.upsert({
+      where: { userId: user.id },
+      update: { otpCode: token, expiresAt },
+      create: { userId: user.id, otpCode: token, expiresAt },
+    });
+
+    // Send password reset email
+    const resetLink = `https://yourapp.com/reset-password?token=${token}`;
+    await this.emailService.sendEmailSMTP(
+      user.email,
+      'Password Reset Request',
+      `Click the link below to reset your password: ${resetLink}`,
+      `<h2>Password Reset Request</h2>
+     <p>Hello ${user.name},</p>
+     <p>Click the button below to reset your password:</p>
+     <a href="${resetLink}" style="background-color:blue; color:white; padding:10px 15px; text-decoration:none;">Reset Password</a>
+     <p>If you did not request this, please ignore this email.</p>`,
+    );
+
+    return { message: 'Password reset link sent to your email' };
+  }
+
+  // ✅ Step 2: Verify token and reset password
+  async resetPassword(token: string, newPassword: string) {
+    // Find the token in DB
+    const resetToken = await this.prisma.otp.findFirst({
+      where: { otpCode: token },
+      include: { user: true },
+    });
+
+    if (!resetToken) {
+      throw new BadRequestException('Invalid or expired token');
+    }
+
+    // Check if the token is expired
+    if (new Date() > resetToken.expiresAt) {
+      throw new BadRequestException('Token has expired');
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password
+    await this.prisma.user.update({
+      where: { id: resetToken.userId },
+      data: { password: hashedPassword },
+    });
+
+    // Delete the token after successful reset
+    await this.prisma.otp.delete({
+      where: { id: resetToken.id },
+    });
+
+    return { message: 'Password successfully reset' };
   }
 }

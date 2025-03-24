@@ -19,7 +19,7 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Role } from 'src/common/enums/roles.enum';
-// import { CheckOwnership } from 'src/common/decorators/ownership.decorator';
+import { CheckOwnership } from 'src/common/decorators/ownership.decorator';
 import { OwnershipGuard } from 'src/common/guards/ownership.guard';
 @Controller('bookings')
 @ApiTags('Booking')
@@ -51,6 +51,7 @@ export class BookingController {
     description: 'This endpoint list booking by owner or community_owner',
   })
   @Roles(Role.OWNER, Role.COMMUNITY_OWNER, Role.SUPERUSER)
+  @CheckOwnership({ entity: 'booking', userField: 'ownerId' })
   findMyAllBookings(
     @Request() req: { user: { id: number; email: string; role: Role } },
   ) {
@@ -65,6 +66,7 @@ export class BookingController {
     description: 'This endpoint details of booking by bookingId',
   })
   @UseGuards(OwnershipGuard)
+  @CheckOwnership({ entity: 'booking', userField: 'guestId' })
   async findOne(@Param('id') id: string, @Request() req) {
     const booking = await this.bookingService.findOne(+id);
 
@@ -93,6 +95,7 @@ export class BookingController {
     description: 'This endpoint Update booking by Guest',
   })
   @UseGuards(OwnershipGuard)
+  @CheckOwnership({ entity: 'booking', userField: 'guestId' })
   async update(
     @Param('id') id: string,
     @Body() updateBookingDto: UpdateBookingDto,
@@ -126,6 +129,7 @@ export class BookingController {
       'This endpoint delets booking by owner or community_owner based on booking Id',
   })
   @UseGuards(OwnershipGuard)
+  @CheckOwnership({ entity: 'booking', userField: 'ownerId' })
   async remove(@Param('id') id: string, @Request() req) {
     const booking = await this.bookingService.findOne(+id);
 
@@ -152,6 +156,7 @@ export class BookingController {
   })
   @UseGuards(OwnershipGuard)
   @Roles(Role.OWNER, Role.COMMUNITY_OWNER, Role.SUPERUSER)
+  @CheckOwnership({ entity: 'booking', userField: 'ownerId' })
   async verifyBooking(
     @Param('id') id: string,
     @Body() updateBookingDto: UpdateBookingDto,
@@ -168,6 +173,7 @@ export class BookingController {
     summary: 'Guest cancel the homestay by booking ID',
     description: 'This endpoint Cancels the booking by booking ID',
   })
+  @CheckOwnership({ entity: 'booking', userField: 'guestId' })
   @UseGuards(OwnershipGuard)
   @Roles(Role.GUEST, Role.COMMUNITY_OWNER, Role.SUPERUSER)
   async cancelBooking(
