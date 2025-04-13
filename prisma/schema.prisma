@@ -5,11 +5,9 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  // connection_limit = 50
 }
 
 // ================= Models ==================
-// prisma/schema.prisma
 
 // Enum for user roles
 enum Role {
@@ -24,6 +22,7 @@ enum VerificationStatus {
   PENDING
   APPROVED
   REJECTED
+  CANCELED
 }
 
 // User model
@@ -33,29 +32,51 @@ model User {
   email              String             @unique
   password           String
   role               Role               @default(GUEST)
+  phoneNumber        String?
+  address            String?
   verificationStatus VerificationStatus @default(PENDING)
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  Booking            Booking[]
-  Homestay           Homestay?
-  CommunityHomestay  CommunityHomestay?
+  profilePicture     String?
+  refreshToken       String?
 
-  @@index([email, role])
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  Booking   Booking[]
+  Homestay  Homestay[]
+  OTP       Otp[]
+
+  @@index([id, email, role])
+}
+
+model Otp {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  otpCode   String // The OTP itself
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, otpCode])
+}
+
+enum RoomStatus {
+  AVAILABLE
+  BOOKED
 }
 
 // Room Model
 model Room {
-  id          Int      @id @default(autoincrement())
-  homestay    Homestay @relation(fields: [homestayId], references: [id])
+  id          Int        @id @default(autoincrement())
+  homestay    Homestay   @relation(fields: [homestayId], references: [id])
   homestayId  Int
   name        String
   description String
   price       Float
-  adults      Int      @default(1)
-  children    Int?     @default(0)
-  totalPeople Int      @default(1)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  adults      Int        @default(1)
+  children    Int?       @default(0)
+  totalPeople Int        @default(1)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  status      RoomStatus @default(AVAILABLE)
 
   @@index([homestayId, price])
 }
@@ -76,59 +97,47 @@ model HomestayFacility {
 
 // Homestay model
 model Homestay {
-  id                  Int                @id @default(autoincrement())
-  name                String
-  description         String
-  location            String
-  ownerId             Int                @unique
-  capacity            Int
-  checkIn             DateTime
-  checkOut            DateTime
-  images              Json
-  status              VerificationStatus @default(PENDING)
-  communityHomestayId Int?
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
+  id            Int                @id @default(autoincrement())
+  name          String
+  description   String
+  location      String
+  ownerId       Int // Can be a Community Owner or a Homestay Owner
+  ownerType     Role // Either OWNER or COMMUNITY_OWNER
+  totalCapacity Int                @default(1)
+  totalBooked   Int                @default(0)
+  checkIn       DateTime
+  checkOut      DateTime
+  images        String[]
+  status        VerificationStatus @default(PENDING)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
 
-  bookings          Booking[]
-  HomestayFacility  HomestayFacility[]
-  owner             User               @relation(fields: [ownerId], references: [id])
-  communityHomestay CommunityHomestay? @relation(fields: [communityHomestayId], references: [id])
-  Room              Room[]
+  bookings         Booking[]
+  HomestayFacility HomestayFacility[]
+  owner            User               @relation(fields: [ownerId], references: [id])
+  Room             Room[]
 
   @@index([location, ownerId])
 }
 
-// CommunityHomestay model
-model CommunityHomestay {
-  id               Int        @id @default(autoincrement())
-  name             String
-  description      String
-  communityOwner   User       @relation(fields: [communityOwnerId], references: [id])
-  communityOwnerId Int        @unique
-  homestays        Homestay[]
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
-
-  @@index([communityOwnerId])
-}
-
 // Booking model
 model Booking {
-  id          Int                @id @default(autoincrement())
-  homestay    Homestay           @relation(fields: [homestayId], references: [id])
-  homestayId  Int
-  guest       User               @relation(fields: [guestId], references: [id])
-  guestId     Int
-  checkIn     DateTime
-  checkOut    DateTime
-  adults      Int                @default(1)
-  children    Int?               @default(0)
-  totalPeople Int                @default(1)
-  status      VerificationStatus @default(PENDING)
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  Transaction Transaction[]
+  id                 Int                @id @default(autoincrement())
+  homestay           Homestay           @relation(fields: [homestayId], references: [id])
+  homestayId         Int
+  guest              User               @relation(fields: [guestId], references: [id])
+  guestId            Int
+  checkIn            DateTime
+  checkOut           DateTime
+  adults             Int                @default(1)
+  children           Int?               @default(0)
+  totalPeople        Int                @default(1)
+  status             VerificationStatus @default(PENDING)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  canceledAt         DateTime? // Track cancellation timestamp (NULL if not canceled)
+  cancellationReason String? // Store reason for cancellation (Optional)
+  Transaction        Transaction[]
 
   @@index([homestayId, guestId])
 }
